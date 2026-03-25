@@ -1,0 +1,25 @@
+name: preflight
+
+on: pull_request
+
+jobs:
+  build-check:
+    name: Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run ESLint Check
+        run: npm run lint:check
+
+      - name: Run TS Check
+        run: npm run ts:check
