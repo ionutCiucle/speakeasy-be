@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { randomUUID } from 'crypto';
 import { LoginBody, RegisterBody } from '../types';
 import { findUserByEmail, createUser } from '../store/userStore';
 
@@ -23,18 +22,13 @@ export const register = async (
     return;
   }
 
-  if (findUserByEmail(email)) {
+  if (await findUserByEmail(email)) {
     res.status(409).json({ message: 'Email already in use' });
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = createUser({
-    id: randomUUID(),
-    email,
-    passwordHash,
-    createdAt: new Date(),
-  });
+  const user = await createUser({ email, passwordHash });
 
   const token = signToken(user.id, user.email);
   res.status(201).json({ token, user: { id: user.id, email: user.email } });
@@ -51,7 +45,7 @@ export const login = async (
     return;
   }
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     res.status(401).json({ message: 'Invalid credentials' });
     return;
