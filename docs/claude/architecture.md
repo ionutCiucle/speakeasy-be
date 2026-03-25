@@ -29,6 +29,19 @@
 
 See `.env.example` for the full template.
 
+## Local development setup
+
+The database runs in Docker. Start it before running the server:
+
+```bash
+docker compose up -d   # start Postgres in the background
+npm run dev            # start the Express server
+```
+
+To stop the DB: `docker compose down`. Data persists in the `pgdata` Docker volume across restarts.
+
+**Docker Compose is infrastructure, not a npm script.** It is intentionally not wired into `package.json` or the preflight workflow. CI uses a GitHub Actions service container instead (to be configured).
+
 ## Prisma conventions
 
 - The singleton client lives in `src/lib/prisma.ts` — always import from there, never instantiate `PrismaClient` elsewhere.
