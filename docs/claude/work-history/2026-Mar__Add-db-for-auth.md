@@ -1,4 +1,4 @@
-# 2026-Mar — Add DB for Auth
+# 2026-Mar__Add-db-for-auth
 
 ## What was done
 
