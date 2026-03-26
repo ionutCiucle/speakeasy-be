@@ -62,8 +62,7 @@ services/<name>/
     app.ts        - Express setup, mounts router
     routes.ts     - route definitions
     controller.ts - request handlers
-    store.ts      - Prisma queries (no HTTP logic)
-    prisma.ts     - PrismaClient singleton
+    store.ts      - Prisma queries (no HTTP logic); owns the PrismaClient instance
     types.ts      - service-local TypeScript types
   prisma/
     schema.prisma
@@ -89,7 +88,7 @@ services/<name>/
 ## Prisma conventions
 
 - Each service has its own schema and generated client at `prisma/client/` — never share across services
-- The `PrismaClient` singleton lives in `src/prisma.ts` — import only from there
+- `PrismaClient` is instantiated at the top of `src/store.ts` — no separate `prisma.ts` file
 - Store functions return Prisma's inferred types — don't manually redeclare them
 - `prisma generate` runs automatically via `postinstall` in each service's `package.json`
 - After a schema change: `npx prisma migrate dev` (local), `npx prisma migrate deploy` (CI/prod)

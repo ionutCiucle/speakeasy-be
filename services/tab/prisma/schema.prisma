@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tab {
+  id           String        @id @default(uuid())
+  title        String
+  createdById  String
+  closedAt     DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  items        Item[]
+  participants Participant[]
+  settlements  Settlement[]
+}
+
+model Item {
+  id        String   @id @default(uuid())
+  tabId     String
+  label     String
+  amount    Decimal  @db.Decimal(10, 2)
+  paidById  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tab       Tab      @relation(fields: [tabId], references: [id])
+}
+
+model Participant {
+  id        String   @id @default(uuid())
+  tabId     String
+  userId    String
+  createdAt DateTime @default(now())
+  tab       Tab      @relation(fields: [tabId], references: [id])
+
+  @@unique([tabId, userId])
+}
+
+model Settlement {
+  id        String   @id @default(uuid())
+  tabId     String
+  payerId   String
+  payeeId   String
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  tab       Tab      @relation(fields: [tabId], references: [id])
+}

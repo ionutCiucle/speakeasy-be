@@ -1,5 +1,6 @@
-import prisma from './prisma';
-import { FriendshipStatus } from '../prisma/client';
+import { PrismaClient, FriendshipStatus } from '../prisma/client';
+
+const prisma = new PrismaClient();
 
 export const createRequest = (requesterId: string, addresseeId: string) =>
   prisma.friendship.create({ data: { requesterId, addresseeId } });

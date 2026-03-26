@@ -1,4 +1,6 @@
-import prisma from './prisma';
+import { PrismaClient } from '../prisma/client';
+
+const prisma = new PrismaClient();
 
 export const findUserById = (id: string) =>
   prisma.user.findUnique({ where: { id } });
