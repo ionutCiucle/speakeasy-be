@@ -38,18 +38,9 @@ npm run dev:gateway         # gateway on :4000
 
 Each service reads its own `.env` — copy from the `.env.example` in that directory.
 
-## Git workflow
-
-- Feature branches are merged into `main` via pull request
-- After a PR is merged, delete the remote branch immediately — no stale branches
-
-```bash
-git branch -d <branch>               # delete local branch
-git push origin --delete <branch>    # delete remote branch
-```
-
 ## Documentation index
 
 - [Architecture](docs/claude/architecture.md)
 - [Auth](docs/claude/auth.md)
+- [Git Workflow](docs/claude/git-workflow.md)
 - [Work History](docs/claude/work-history/)
