@@ -8,13 +8,16 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "ts:check": "tsc --noEmit",
-    "lint:check": "eslint src/**/*.ts"
+    "lint:check": "eslint src/**/*.ts",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "amqplib": "^0.10.5",
     "dotenv": "^17.3.1"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.10.7"
+    "@types/amqplib": "^0.10.7",
+    "vitest": "^2.1.9"
   }
 }

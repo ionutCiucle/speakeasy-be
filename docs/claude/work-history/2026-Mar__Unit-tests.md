@@ -40,11 +40,12 @@ Add a unit test suite across all services. Each service gets its own tests co-lo
 
 ## Steps
 
-- [ ] Step 1 — Add Vitest infrastructure
-  - Install `vitest` in each service as a devDependency
-  - Add `"test": "vitest run"` and `"test:watch": "vitest"` scripts to each service's `package.json`
-  - Add root `"test": "npm run test --workspaces --if-present"` script
-  - Add shared `vitest.config.ts` base in `packages/tsconfig/` (or per-service inline config)
+- [x] Step 1 — Add Vitest infrastructure
+  - Installed `vitest@^2.1.9` in each service (v2 required — v4 needs Node ≥20.12, we're on 20.10)
+  - Added `"test": "vitest run --passWithNoTests"` and `"test:watch": "vitest"` to each service's `package.json`
+  - Added root `"test": "npm run test --workspaces --if-present"` script
+  - Added `Test` step to `.github/workflows/preflight.yml`
+  - `--passWithNoTests` keeps CI green until test files are added
 - [ ] Step 2 — Write tests for Auth Service
 - [ ] Step 3 — Write tests for User Service
 - [ ] Step 4 — Write tests for Friendship Service

@@ -9,11 +9,13 @@
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
     "ts:check": "tsc --noEmit",
-    "lint:check": "eslint src/**/*.ts"
+    "lint:check": "eslint src/**/*.ts",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@speakeasy/types": "*",
     "@prisma/client": "^5.22.0",
+    "@speakeasy/types": "*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -25,6 +27,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "vitest": "^2.1.9"
   }
 }
