@@ -1,5 +1,7 @@
 # 2026-Mar__Unit-tests
 
+## Status: COMPLETE ✓
+
 ## Plan
 
 Add a unit test suite across all services. Each service gets its own tests co-located with its source. Tests run in CI as part of the Preflight check.
@@ -46,9 +48,9 @@ Add a unit test suite across all services. Each service gets its own tests co-lo
   - Added root `"test": "npm run test --workspaces --if-present"` script
   - Added `Test` step to `.github/workflows/preflight.yml`
   - `--passWithNoTests` keeps CI green until test files are added
-- [ ] Step 2 — Write tests for Auth Service
-- [ ] Step 3 — Write tests for User Service
-- [ ] Step 4 — Write tests for Friendship Service
-- [ ] Step 5 — Write tests for Tab Service
-- [ ] Step 6 — Write tests for Notification Service
-- [ ] Step 7 — Add `test` step to `.github/workflows/preflight.yml`
+- [x] Step 2 — Write tests for Auth Service (11 tests)
+- [x] Step 3 — Write tests for User Service (7 tests)
+- [x] Step 4 — Write tests for Friendship Service (16 tests)
+- [x] Step 5 — Write tests for Tab Service (15 tests)
+- [x] Step 6 — Write tests for Notification Service (4 tests)
+- [x] Step 7 — Add `test` step to `.github/workflows/preflight.yml`
