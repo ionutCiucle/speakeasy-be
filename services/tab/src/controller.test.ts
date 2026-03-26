@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Decimal } from '../prisma/client/runtime/library';
 import {
   handleCreateTab, handleGetTab, handleAddItem, handleUpdateItem,
   handleAddParticipant, handleRecordSettlement, handleCloseTab,
@@ -28,7 +29,7 @@ const fakeTab = {
   items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }], settlements: [],
 };
 
-const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: 10, paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
+const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -128,7 +129,7 @@ describe('handleRecordSettlement', () => {
   });
 
   it('records settlement and publishes event', async () => {
-    const settlement = { id: 's1', tabId: 't1', payerId: 'u1', payeeId: 'u2', amount: 5, createdAt: new Date() };
+    const settlement = { id: 's1', tabId: 't1', payerId: 'u1', payeeId: 'u2', amount: new Decimal(5), createdAt: new Date() };
     vi.mocked(store.findTabById).mockResolvedValue(fakeTab);
     vi.mocked(store.recordSettlement).mockResolvedValue(settlement);
     vi.mocked(publisher.publish).mockResolvedValue(undefined);
