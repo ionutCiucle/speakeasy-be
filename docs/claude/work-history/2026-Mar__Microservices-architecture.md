@@ -1,5 +1,7 @@
 # 2026-Mar__Microservices-architecture
 
+## Status: COMPLETE ✓
+
 ## Plan
 
 Migrate `speakeasy-be` from a single Express server to a monorepo of independent microservices. Each service owns its own codebase, database, and deployment unit.
