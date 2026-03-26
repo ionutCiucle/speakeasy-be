@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { LoginBody, RegisterBody } from '../types';
-import { findUserByEmail, createUser } from '../store/userStore';
+import { LoginBody, RegisterBody } from './types';
+import { findUserByEmail, createUser } from './store';
 
 const signToken = (userId: string, email: string): string =>
   jwt.sign(

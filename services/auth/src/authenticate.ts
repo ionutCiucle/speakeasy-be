@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { JwtPayload } from '../types';
+import { JwtPayload } from '@speakeasy/types';
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
