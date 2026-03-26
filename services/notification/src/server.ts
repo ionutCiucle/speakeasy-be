@@ -1,9 +1,12 @@
 import 'dotenv/config';
 import { startConsumer } from './consumer';
 
-startConsumer()
-  .then(() => console.log('[notification-service] ready'))
-  .catch((err) => {
+(async () => {
+  try {
+    await startConsumer();
+    console.log('[notification-service] ready');
+  } catch (err) {
     console.error('[notification-service] failed to start:', err);
     process.exit(1);
-  });
+  }
+})();
