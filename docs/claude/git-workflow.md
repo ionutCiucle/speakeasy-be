@@ -25,16 +25,24 @@ git checkout -b feature/<feature-title>
 
 When the feature is complete:
 
-1. Push the branch and open a PR against `main`:
+1. Run the full preflight suite locally and confirm it passes before opening the PR:
+
+```bash
+npm run ts:check
+npm run lint:check
+npm run test
+```
+
+2. Push the branch and open a PR against `main`:
 
 ```bash
 git push -u origin feature/<feature-title>
 gh pr create --title "<title>" --body "..."
 ```
 
-2. The PR description should cover: what changed, why, and a test plan.
-3. The PR must pass the **Preflight** check (type check + lint) before merging.
-4. Add a **WIP** label if work is still in progress.
+3. The PR description should cover: what changed, why, and a test plan.
+4. The PR must pass the **Preflight** CI check before merging.
+5. Add a **WIP** label if work is still in progress.
 
 ---
 

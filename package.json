@@ -14,7 +14,8 @@
     "dev:notification": "npm run dev --workspace=@speakeasy/notification --",
     "dev:gateway": "npm run dev --workspace=@speakeasy/gateway --",
     "ts:check": "npm run ts:check --workspaces --if-present",
-    "lint:check": "npm run lint:check --workspaces --if-present"
+    "lint:check": "npm run lint:check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
