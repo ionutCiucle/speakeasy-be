@@ -1,15 +1,64 @@
 services:
-  db:
+  db-auth:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: speakeasy
       POSTGRES_PASSWORD: speakeasy
-      POSTGRES_DB: speakeasy
+      POSTGRES_DB: speakeasy_auth
     ports:
       - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata-auth:/var/lib/postgresql/data
+
+  db-user:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: speakeasy
+      POSTGRES_PASSWORD: speakeasy
+      POSTGRES_DB: speakeasy_user
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata-user:/var/lib/postgresql/data
+
+  db-friendship:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: speakeasy
+      POSTGRES_PASSWORD: speakeasy
+      POSTGRES_DB: speakeasy_friendship
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata-friendship:/var/lib/postgresql/data
+
+  db-tab:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: speakeasy
+      POSTGRES_PASSWORD: speakeasy
+      POSTGRES_DB: speakeasy_tab
+    ports:
+      - '5435:5432'
+    volumes:
+      - pgdata-tab:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
 volumes:
-  pgdata:
+  pgdata-auth:
+  pgdata-user:
+  pgdata-friendship:
+  pgdata-tab:
+  rabbitmq-data:

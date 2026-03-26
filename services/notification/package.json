@@ -1,0 +1,20 @@
+{
+  "name": "@speakeasy/notification",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "ts:check": "tsc --noEmit",
+    "lint:check": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.5",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.7"
+  }
+}

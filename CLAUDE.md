@@ -1,6 +1,6 @@
 # speakeasy-be
 
-Node.js REST API backend for the Speakeasy app. Companion to `speakeasy-ui`.
+Node.js microservices backend for the Speakeasy app. Companion to `speakeasy-ui`.
 
 ## Stack
 
@@ -8,43 +8,35 @@ Node.js REST API backend for the Speakeasy app. Companion to `speakeasy-ui`.
 - **Language:** TypeScript 5 (strict mode)
 - **ORM:** Prisma 5 (PostgreSQL)
 - **Auth:** JWT (jsonwebtoken) + bcryptjs
+- **Monorepo:** npm workspaces
 - **Linting:** ESLint + `@typescript-eslint`
 
-## Architecture
-
-### Entry point
-
-`src/server.ts` → loads `.env`, starts Express on `PORT`
-
-`src/app.ts` → mounts CORS, JSON body parser, and all routers
-
-### Directory conventions
+## Monorepo structure
 
 ```
-src/
-  app.ts                  - Express app setup
-  server.ts               - process entry point
-  controllers/            - request handlers (one file per domain)
-  middleware/             - Express middleware
-  routes/                 - router definitions (one file per domain)
-  store/                  - DB access layer (Prisma queries)
-  lib/                    - shared singletons (prisma client, etc.)
-  types/                  - shared TypeScript interfaces
-prisma/
-  schema.prisma           - Prisma schema + migrations source
+speakeasy-be/
+  services/
+    auth/       - JWT issuance, registration, login       (port 3000)
+    user/       - user profiles                           (port 3001)
+    gateway/    - single entry point, proxies + rate limiting (port 4000)
+  packages/
+    middleware/ - shared JWT authenticate middleware (@speakeasy/middleware)
+    types/      - shared TypeScript interfaces (@speakeasy/types)
+    tsconfig/   - shared tsconfig base (@speakeasy/tsconfig)
 ```
 
-### Request lifecycle
+Clients should only talk to the **gateway** (port 4000). Services are internal.
 
-`route` → `controller` → `store` (Prisma) → response
+## Running locally
 
-Controllers own HTTP concerns (status codes, request parsing, response shape). Store functions own DB queries — no HTTP logic there.
+```bash
+docker compose up -d        # start all Postgres instances
+npm run dev:auth            # auth service on :3000
+npm run dev:user            # user service on :3001
+npm run dev:gateway         # gateway on :4000
+```
 
-### Auth flow
-
-- `POST /api/auth/register` — hash password → create user → return JWT
-- `POST /api/auth/login` — verify password → return JWT
-- Protected routes use the `authenticate` middleware (`src/middleware/authenticate.ts`), which validates the `Authorization: Bearer <token>` header and attaches `req.user` (`{ userId, email }`)
+Each service reads its own `.env` — copy from the `.env.example` in that directory.
 
 ## Documentation index
 

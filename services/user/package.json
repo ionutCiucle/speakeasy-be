@@ -1,0 +1,27 @@
+{
+  "name": "@speakeasy/user",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "postinstall": "prisma generate",
+    "ts:check": "tsc --noEmit",
+    "lint:check": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@speakeasy/middleware": "*",
+    "@speakeasy/types": "*",
+    "@prisma/client": "^5.22.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "prisma": "^5.22.0"
+  }
+}
