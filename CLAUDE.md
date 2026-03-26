@@ -4,7 +4,7 @@ Node.js microservices backend for the Speakeasy app. Companion to `speakeasy-ui`
 
 ## Stack
 
-- **Runtime:** Node.js 20 / Express 5
+- **Runtime:** Node.js 24 / Express 5
 - **Language:** TypeScript 5 (strict mode)
 - **ORM:** Prisma 5 (PostgreSQL)
 - **Auth:** JWT (jsonwebtoken) + bcryptjs
