@@ -159,7 +159,10 @@ Cross-service data access goes through API calls or events — never direct DB a
 - [ ] Step 6 — Scaffold `services/friendship/`
 - [ ] Step 7 — Scaffold `services/tab/`
 - [ ] Step 8 — Add message broker (RabbitMQ) and scaffold `services/notification/`
-- [ ] Step 9 — Update CI preflight to run lint + type check across all workspaces
+- [x] Step 9 — Update CI preflight to run lint + type check across all workspaces
+  - Upgraded Node 18 → 20 in workflow
+  - Updated `eslint.config.mjs` to cover `services/*/src/**/*.ts` and `packages/*/src/**/*.ts`
+  - Root `ts:check` and `lint:check` use `--workspaces --if-present` — runs across all services automatically
 
 ---
 
