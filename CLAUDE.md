@@ -42,4 +42,5 @@ Each service reads its own `.env` — copy from the `.env.example` in that direc
 
 - [Architecture](docs/claude/architecture.md)
 - [Auth](docs/claude/auth.md)
+- [Git Workflow](docs/claude/git-workflow.md)
 - [Work History](docs/claude/work-history/)
