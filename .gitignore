@@ -4,4 +4,4 @@ dist/
 *.js.map
 services/**/.env
 services/**/dist/
-services/**/src/prisma-client/
+services/**/prisma/client/
