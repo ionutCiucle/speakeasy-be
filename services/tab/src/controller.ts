@@ -17,6 +17,7 @@ import {
   recordSettlement,
   closeTab,
 } from './store';
+import { publish } from './publisher';
 
 type TabRequest = AuthRequest & { params: { id: string } };
 type ItemRequest = AuthRequest & { params: { id: string; itemId: string } };
@@ -67,6 +68,7 @@ export const handleAddParticipant = async (
   if (!tab) { res.status(404).json({ message: 'Tab not found' }); return; }
 
   const participant = await addParticipant(tab.id, req.body.userId);
+  void publish('tab.invite_sent', { tabId: tab.id, invitedUserId: participant.userId, invitedById: req.user!.userId });
   res.status(201).json(participant);
 };
 
@@ -78,6 +80,8 @@ export const handleRecordSettlement = async (
   if (!tab) { res.status(404).json({ message: 'Tab not found' }); return; }
 
   const settlement = await recordSettlement(tab.id, req.body.payerId, req.body.payeeId, req.body.amount);
+  const participantIds = tab.participants.map((p) => p.userId);
+  void publish('tab.settled', { tabId: tab.id, settlementId: settlement.id, payerId: settlement.payerId, payeeId: settlement.payeeId, participantIds });
   res.status(201).json(settlement);
 };
 

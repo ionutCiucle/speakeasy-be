@@ -12,14 +12,16 @@
     "lint:check": "eslint src/**/*.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@speakeasy/middleware": "*",
     "@speakeasy/types": "*",
-    "@prisma/client": "^5.22.0",
+    "amqplib": "^0.10.9",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "prisma": "^5.22.0"

@@ -161,8 +161,17 @@ Cross-service data access goes through API calls or events — never direct DB a
   - Endpoints: `POST /request`, `PATCH /:id/accept`, `PATCH /:id/reject`, `PATCH /:id/block`, `GET /`
   - All routes protected — gateway validates JWT before forwarding
   - `db-friendship` on port 5434
-- [ ] Step 7 — Scaffold `services/tab/`
-- [ ] Step 8 — Add message broker (RabbitMQ) and scaffold `services/notification/`
+- [x] Step 7 — Scaffold `services/tab/`
+  - Models: `Tab`, `Item`, `Participant`, `Settlement`
+  - Endpoints: `POST /`, `GET /:id`, `POST /:id/items`, `PATCH /:id/items/:itemId`, `POST /:id/participants`, `POST /:id/settle`, `POST /:id/close`
+  - `db-tab` on port 5435
+- [x] Step 8 — Add message broker (RabbitMQ) and scaffold `services/notification/`
+  - RabbitMQ added to `docker-compose.yml` (AMQP on 5672, management UI on 15672)
+  - Topic exchange `speakeasy.events` — durable, one queue per routing key
+  - Friendship service publishes `friendship.requested`, `friendship.accepted`
+  - Tab service publishes `tab.invite_sent` (on participant add), `tab.settled`
+  - Notification service subscribes to all four events and logs delivery
+  - Per-service `publisher.ts` — fire-and-forget, errors logged without crashing the service
 - [x] Step 9 — Update CI preflight to run lint + type check across all workspaces
   - Upgraded Node 18 → 20 in workflow
   - Updated `eslint.config.mjs` to cover `services/*/src/**/*.ts` and `packages/*/src/**/*.ts`

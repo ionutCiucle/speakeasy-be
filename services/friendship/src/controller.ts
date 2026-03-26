@@ -3,6 +3,7 @@ import { AuthRequest } from '@speakeasy/middleware';
 import { FriendshipStatus } from '../prisma/client';
 import { SendRequestBody } from './types';
 import { createRequest, findById, updateStatus, listFriends } from './store';
+import { publish } from './publisher';
 
 export const sendRequest = async (
   req: AuthRequest & { body: SendRequestBody },
@@ -17,6 +18,7 @@ export const sendRequest = async (
   }
 
   const friendship = await createRequest(requesterId, addresseeId);
+  void publish('friendship.requested', { friendshipId: friendship.id, requesterId, addresseeId });
   res.status(201).json(friendship);
 };
 
@@ -35,7 +37,9 @@ export const acceptRequest = async (
     return;
   }
 
-  res.json(await updateStatus(req.params.id, FriendshipStatus.ACCEPTED));
+  const updated = await updateStatus(req.params.id, FriendshipStatus.ACCEPTED);
+  void publish('friendship.accepted', { friendshipId: updated.id, requesterId: updated.requesterId, addresseeId: updated.addresseeId });
+  res.json(updated);
 };
 
 export const rejectRequest = async (
