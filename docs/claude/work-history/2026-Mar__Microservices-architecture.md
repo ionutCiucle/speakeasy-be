@@ -148,8 +148,12 @@ Cross-service data access goes through API calls or events — never direct DB a
   - User model: `id` (from Auth JWT), `displayName`, `avatarUrl`, `createdAt`, `updatedAt`
   - Endpoints: `GET /api/users/me`, `PATCH /api/users/me`, `GET /api/users/:id` (all protected)
   - Per-service Prisma client generated to `prisma/client/` (gitignored) to avoid npm workspace hoisting conflicts
-- [ ] Step 4 — Scaffold `gateway/` with routing and JWT validation middleware
-  - [ ] Consider moving or copying `middleware.ts` to the gateway if token validation is centralised there instead
+- [x] Step 4 — Scaffold `gateway/` with routing and JWT validation middleware
+  - Runs on port 4000 — single entry point for all client requests
+  - `/api/auth/*` → auth service (public, no token required)
+  - `/api/users/*` → user service (protected via `@speakeasy/middleware`)
+  - Rate limiting: 100 requests per 15 min window via `express-rate-limit`
+  - `pathRewrite` used to restore the full path after Express strips the mount prefix
 - [x] Step 5 — Update `docker-compose.yml` to run all services and a Postgres instance per service
   - `db-auth` on port 5432, `db-user` on port 5433
 - [ ] Step 6 — Scaffold `services/friendship/`

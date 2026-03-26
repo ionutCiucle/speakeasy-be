@@ -5,3 +5,5 @@ dist/
 services/**/.env
 services/**/dist/
 services/**/prisma/client/
+gateway/.env
+gateway/dist/

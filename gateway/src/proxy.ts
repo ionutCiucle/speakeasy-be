@@ -1,0 +1,16 @@
+import { createProxyMiddleware } from 'http-proxy-middleware';
+
+const AUTH_URL = process.env.AUTH_SERVICE_URL ?? 'http://localhost:3000';
+const USER_URL = process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
+
+export const authProxy = createProxyMiddleware({
+  target: AUTH_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/': '/api/auth/' },
+});
+
+export const userProxy = createProxyMiddleware({
+  target: USER_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/': '/api/users/' },
+});
