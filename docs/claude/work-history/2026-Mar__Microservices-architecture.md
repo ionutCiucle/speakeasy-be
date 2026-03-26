@@ -141,10 +141,12 @@ Cross-service data access goes through API calls or events — never direct DB a
 
 ## Steps
 
-- [ ] Step 1 — Set up monorepo tooling (`npm workspaces`, shared `tsconfig`, shared `types` package)
-- [ ] Step 2 — Migrate existing Auth code into `services/auth/`
+- [x] Step 1 — Set up monorepo tooling (`npm workspaces`, shared `tsconfig`, shared `types` package)
+- [x] Step 2 — Migrate existing Auth code into `services/auth/`
 - [ ] Step 3 — Scaffold `services/user/` with User model and profile endpoints
+  - [ ] Move `services/auth/src/middleware.ts` into `services/user/` (first service that needs route protection)
 - [ ] Step 4 — Scaffold `gateway/` with routing and JWT validation middleware
+  - [ ] Consider moving or copying `middleware.ts` to the gateway if token validation is centralised there instead
 - [ ] Step 5 — Update `docker-compose.yml` to run all services and a Postgres instance per service
 - [ ] Step 6 — Scaffold `services/friendship/`
 - [ ] Step 7 — Scaffold `services/tab/`
