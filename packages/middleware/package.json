@@ -1,0 +1,14 @@
+{
+  "name": "@speakeasy/middleware",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@speakeasy/types": "*",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10"
+  }
+}

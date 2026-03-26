@@ -1,15 +1,28 @@
 services:
-  db:
+  db-auth:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: speakeasy
       POSTGRES_PASSWORD: speakeasy
-      POSTGRES_DB: speakeasy
+      POSTGRES_DB: speakeasy_auth
     ports:
       - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata-auth:/var/lib/postgresql/data
+
+  db-user:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: speakeasy
+      POSTGRES_PASSWORD: speakeasy
+      POSTGRES_DB: speakeasy_user
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata-user:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  pgdata-auth:
+  pgdata-user:
