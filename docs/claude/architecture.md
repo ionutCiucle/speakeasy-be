@@ -1,50 +1,125 @@
 # Architecture
 
-## Layer responsibilities
+## Overview
 
-| Layer | Location | Responsibility |
-|---|---|---|
-| Router | `src/routes/` | Map HTTP method + path to controller function |
-| Controller | `src/controllers/` | Parse request, call store, return response |
-| Store | `src/store/` | All Prisma queries — no HTTP logic |
-| Middleware | `src/middleware/` | Cross-cutting concerns (auth, future: logging, validation) |
-| Lib | `src/lib/` | Shared singletons (e.g. `prisma.ts`) |
+`speakeasy-be` is an npm workspaces monorepo of independent microservices. Each service owns its own database, Prisma schema, and Express app. All client traffic enters through the **gateway**.
 
-## Adding a new domain
-
-1. Add the Prisma model to `prisma/schema.prisma` and run `npx prisma migrate dev --name <name>`.
-2. Create `src/store/<domain>Store.ts` — query functions only, typed via Prisma's inferred return types.
-3. Create `src/controllers/<domain>Controller.ts` — one exported function per endpoint.
-4. Create `src/routes/<domain>.ts` — wire up the router and export it.
-5. Mount the router in `src/app.ts` under `/api/<domain>`.
-
-## Environment variables
-
-| Variable | Purpose |
-|---|---|
-| `PORT` | HTTP port (default `3000`) |
-| `JWT_SECRET` | Secret used to sign/verify JWTs |
-| `JWT_EXPIRES_IN` | JWT expiry string e.g. `7d` |
-| `DATABASE_URL` | Prisma PostgreSQL connection string |
-
-See `.env.example` for the full template.
-
-## Local development setup
-
-The database runs in Docker. Start it before running the server:
-
-```bash
-docker compose up -d   # start Postgres in the background
-npm run dev            # start the Express server
+```
+Client → gateway:4000 → auth-service:3000
+                       → user-service:3001
 ```
 
-To stop the DB: `docker compose down`. Data persists in the `pgdata` Docker volume across restarts.
+---
 
-**Docker Compose is infrastructure, not a npm script.** It is intentionally not wired into `package.json` or the preflight workflow. CI uses a GitHub Actions service container instead (to be configured).
+## Services
+
+| Service | Port | Responsibility |
+|---|---|---|
+| `services/gateway` | 4000 | Routing, JWT validation, rate limiting |
+| `services/auth` | 3000 | Registration, login, JWT issuance |
+| `services/user` | 3001 | User profiles |
+
+### Gateway
+
+- Proxies `/api/auth/*` → auth service (public)
+- Proxies `/api/users/*` → user service (protected — validates JWT via `@speakeasy/middleware` before forwarding)
+- Rate limiting: 100 req / 15 min window
+- The only service exposed to clients
+
+### Auth Service
+
+- `POST /api/auth/register` — hash password → create user → return JWT
+- `POST /api/auth/login` — verify password → return JWT
+- All routes are public — no Prisma schema shared with other services
+
+### User Service
+
+- `GET /api/users/me` — get own profile (from JWT `userId`)
+- `PATCH /api/users/me` — update `displayName`, `avatarUrl`
+- `GET /api/users/:id` — get profile by ID
+- Does not store credentials — `User.id` matches `userId` from Auth JWT
+
+---
+
+## Shared packages
+
+| Package | Purpose |
+|---|---|
+| `@speakeasy/middleware` | `authenticate` Express middleware — validates JWT Bearer token, attaches `req.user` |
+| `@speakeasy/types` | Shared TypeScript interfaces (`JwtPayload`) |
+| `@speakeasy/tsconfig` | Shared `tsconfig` base extended by each service |
+
+---
+
+## Service structure
+
+Each service follows the same flat file layout — no single-file folders:
+
+```
+services/<name>/
+  src/
+    server.ts     - process entry, loads .env, starts Express
+    app.ts        - Express setup, mounts router
+    routes.ts     - route definitions
+    controller.ts - request handlers
+    store.ts      - Prisma queries (no HTTP logic)
+    prisma.ts     - PrismaClient singleton
+    types.ts      - service-local TypeScript types
+  prisma/
+    schema.prisma
+    migrations/
+    client/       - generated Prisma client (gitignored, auto-generated via postinstall)
+  package.json
+  tsconfig.json
+  .env.example
+```
+
+---
+
+## Adding a new service
+
+1. Create `services/<name>/` following the structure above
+2. Add a Prisma model and run `npx prisma migrate dev --name init` from the service directory
+3. Add `"dev:<name>"` script to root `package.json`
+4. Add a new `db-<name>` service to `docker-compose.yml`
+5. Register the proxy route in `services/gateway/src/proxy.ts` and `app.ts`
+
+---
 
 ## Prisma conventions
 
-- The singleton client lives in `src/lib/prisma.ts` — always import from there, never instantiate `PrismaClient` elsewhere.
-- Store functions return Prisma's inferred types directly — don't manually re-declare them in `src/types/`.
-- After any schema change: `npx prisma migrate dev` (local), `npx prisma migrate deploy` (CI/prod).
-- `prisma generate` runs automatically via the `postinstall` npm script.
+- Each service has its own schema and generated client at `prisma/client/` — never share across services
+- The `PrismaClient` singleton lives in `src/prisma.ts` — import only from there
+- Store functions return Prisma's inferred types — don't manually redeclare them
+- `prisma generate` runs automatically via `postinstall` in each service's `package.json`
+- After a schema change: `npx prisma migrate dev` (local), `npx prisma migrate deploy` (CI/prod)
+
+---
+
+## Local development setup
+
+```bash
+docker compose up -d    # start all Postgres instances (db-auth:5432, db-user:5433)
+npm run dev:auth        # auth service on :3000
+npm run dev:user        # user service on :3001
+npm run dev:gateway     # gateway on :4000
+```
+
+Data persists in named Docker volumes across restarts. To reset: `docker compose down -v`.
+
+**Docker Compose is infrastructure, not an npm script.** CI uses GitHub Actions service containers instead.
+
+---
+
+## Environment variables
+
+Each service has its own `.env` (gitignored). Copy from `.env.example` in the service directory.
+
+| Variable | Services | Purpose |
+|---|---|---|
+| `PORT` | all | HTTP listen port |
+| `JWT_SECRET` | auth, user, gateway | Sign / verify JWTs |
+| `JWT_EXPIRES_IN` | auth | Token expiry e.g. `7d` |
+| `DATABASE_URL` | auth, user | Prisma connection string |
+| `AUTH_SERVICE_URL` | gateway | Internal URL of auth service |
+| `USER_SERVICE_URL` | gateway | Internal URL of user service |
