@@ -5,5 +5,5 @@
 ## Plan
 
 - [x] Phase 1 — Create branch `feature/update-readme` and this plan
-- [ ] Phase 2 — Rewrite `README.md`
-- [ ] Phase 3 — Preflight, commit, push, raise PR
+- [x] Phase 2 — Rewrite `README.md`
+- [x] Phase 3 — Preflight, commit, push, raise PR
