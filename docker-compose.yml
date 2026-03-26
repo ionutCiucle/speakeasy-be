@@ -23,6 +23,19 @@ services:
     volumes:
       - pgdata-user:/var/lib/postgresql/data
 
+  db-friendship:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: speakeasy
+      POSTGRES_PASSWORD: speakeasy
+      POSTGRES_DB: speakeasy_friendship
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata-friendship:/var/lib/postgresql/data
+
 volumes:
   pgdata-auth:
   pgdata-user:
+  pgdata-friendship:

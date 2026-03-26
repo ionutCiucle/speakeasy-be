@@ -9,6 +9,7 @@
   "scripts": {
     "dev:auth": "npm run dev --workspace=@speakeasy/auth --",
     "dev:user": "npm run dev --workspace=@speakeasy/user --",
+    "dev:friendship": "npm run dev --workspace=@speakeasy/friendship --",
     "dev:gateway": "npm run dev --workspace=@speakeasy/gateway --",
     "ts:check": "npm run ts:check --workspaces --if-present",
     "lint:check": "npm run lint:check --workspaces --if-present"

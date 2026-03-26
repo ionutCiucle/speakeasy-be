@@ -156,7 +156,11 @@ Cross-service data access goes through API calls or events — never direct DB a
   - `pathRewrite` used to restore the full path after Express strips the mount prefix
 - [x] Step 5 — Update `docker-compose.yml` to run all services and a Postgres instance per service
   - `db-auth` on port 5432, `db-user` on port 5433
-- [ ] Step 6 — Scaffold `services/friendship/`
+- [x] Step 6 — Scaffold `services/friendship/`
+  - `FriendshipStatus` enum: PENDING, ACCEPTED, REJECTED, BLOCKED
+  - Endpoints: `POST /request`, `PATCH /:id/accept`, `PATCH /:id/reject`, `PATCH /:id/block`, `GET /`
+  - All routes protected — gateway validates JWT before forwarding
+  - `db-friendship` on port 5434
 - [ ] Step 7 — Scaffold `services/tab/`
 - [ ] Step 8 — Add message broker (RabbitMQ) and scaffold `services/notification/`
 - [x] Step 9 — Update CI preflight to run lint + type check across all workspaces
