@@ -11,6 +11,7 @@
     "lint:check": "eslint src/**/*.ts"
   },
   "dependencies": {
+    "@scalar/express-api-reference": "^0.9.5",
     "@speakeasy/middleware": "*",
     "@speakeasy/types": "*",
     "cors": "^2.8.6",
