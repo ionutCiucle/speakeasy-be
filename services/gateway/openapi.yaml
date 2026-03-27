@@ -1,0 +1,677 @@
+openapi: 3.1.0
+info:
+  title: Speakeasy API
+  version: 1.0.0
+  description: >
+    REST API for the Speakeasy app. All requests go through the gateway on port 4000.
+    Protected routes require a Bearer JWT obtained from `/api/auth/login` or `/api/auth/register`.
+
+servers:
+  - url: http://localhost:4000
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Friendship:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        requesterId:
+          type: string
+          format: uuid
+        addresseeId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, REJECTED, BLOCKED]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Tab:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        createdById:
+          type: string
+          format: uuid
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        settlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Settlement'
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tabId:
+          type: string
+          format: uuid
+        label:
+          type: string
+        amount:
+          type: string
+          description: Decimal string e.g. "12.50"
+        paidById:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tabId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Settlement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tabId:
+          type: string
+          format: uuid
+        payerId:
+          type: string
+          format: uuid
+        payeeId:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          description: Decimal string e.g. "12.50"
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+paths:
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Missing email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and obtain a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Missing email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Users ─────────────────────────────────────────────────────────────────
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Get own profile (upserts on first call)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Missing or invalid token
+
+    patch:
+      tags: [Users]
+      summary: Update own profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                avatarUrl:
+                  type: string
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Missing or invalid token
+
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get a user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Friendships ───────────────────────────────────────────────────────────
+
+  /api/friendships:
+    get:
+      tags: [Friendships]
+      summary: List accepted friends
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of friendships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friendship'
+
+  /api/friendships/request:
+    post:
+      tags: [Friendships]
+      summary: Send a friend request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [addresseeId]
+              properties:
+                addresseeId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Friend request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friendship'
+        '400':
+          description: Cannot send request to yourself
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/friendships/{id}/accept:
+    patch:
+      tags: [Friendships]
+      summary: Accept a friend request (addressee only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Friendship accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friendship'
+        '403':
+          description: Caller is not the addressee
+        '404':
+          description: Friendship not found
+
+  /api/friendships/{id}/reject:
+    patch:
+      tags: [Friendships]
+      summary: Reject a friend request (addressee only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Friendship rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friendship'
+        '403':
+          description: Caller is not the addressee
+        '404':
+          description: Friendship not found
+
+  /api/friendships/{id}/block:
+    patch:
+      tags: [Friendships]
+      summary: Block a user (either party)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friendship'
+        '403':
+          description: Caller is not a participant
+        '404':
+          description: Friendship not found
+
+  # ── Tabs ──────────────────────────────────────────────────────────────────
+
+  /api/tabs:
+    post:
+      tags: [Tabs]
+      summary: Create a tab (creator auto-added as participant)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Tab created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tab'
+
+  /api/tabs/{id}:
+    get:
+      tags: [Tabs]
+      summary: Get a tab with items, participants, and settlements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tab details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tab'
+        '404':
+          description: Tab not found
+
+  /api/tabs/{id}/items:
+    post:
+      tags: [Tabs]
+      summary: Add a line item to a tab
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, amount, paidById]
+              properties:
+                label:
+                  type: string
+                amount:
+                  type: number
+                paidById:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Item added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          description: Tab not found
+
+  /api/tabs/{id}/items/{itemId}:
+    patch:
+      tags: [Tabs]
+      summary: Update a line item
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                amount:
+                  type: number
+                paidById:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          description: Item not found or belongs to a different tab
+
+  /api/tabs/{id}/participants:
+    post:
+      tags: [Tabs]
+      summary: Add a participant to a tab
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Participant added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        '404':
+          description: Tab not found
+
+  /api/tabs/{id}/settle:
+    post:
+      tags: [Tabs]
+      summary: Record a settlement between two participants
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payerId, payeeId, amount]
+              properties:
+                payerId:
+                  type: string
+                  format: uuid
+                payeeId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: number
+      responses:
+        '201':
+          description: Settlement recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        '404':
+          description: Tab not found
+
+  /api/tabs/{id}/close:
+    post:
+      tags: [Tabs]
+      summary: Close a tab (creator only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tab closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tab'
+        '403':
+          description: Caller is not the tab creator
+        '404':
+          description: Tab not found
