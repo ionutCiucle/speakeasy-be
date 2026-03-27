@@ -5,5 +5,5 @@
 ## Plan
 
 - [x] Phase 1 — Create branch and this plan
-- [ ] Phase 2 — Update `.github/workflows/preflight.yml`
-- [ ] Phase 3 — Preflight, commit, push, raise PR
+- [x] Phase 2 — Update `.github/workflows/preflight.yml`
+- [x] Phase 3 — Preflight, commit, push, raise PR
