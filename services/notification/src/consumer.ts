@@ -1,5 +1,6 @@
 import amqplib from 'amqplib';
 import { onFriendshipRequested, onFriendshipAccepted, onTabInviteSent, onTabSettled } from './handlers';
+import { logger } from './logger';
 
 const EXCHANGE = 'speakeasy.events';
 
@@ -33,11 +34,11 @@ export async function startConsumer(): Promise<void> {
         dispatch(routingKey, payload);
         channel.ack(msg);
       } catch (err) {
-        console.error(`[notification-service] failed to handle ${routingKey}:`, err);
+        logger.error({ err, routingKey }, 'consumer: failed to handle event');
         channel.nack(msg, false, false);
       }
     });
 
-    console.log(`[notification-service] subscribed to ${routingKey}`);
+    logger.info({ routingKey }, 'consumer: subscribed');
   }
 }

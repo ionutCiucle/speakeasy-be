@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { LoginBody, RegisterBody } from './types';
 import { findUserByEmail, createUser } from './store';
+import { logger } from './logger';
 
 const signToken = (userId: string, email: string): string =>
   jwt.sign(
@@ -18,11 +19,13 @@ export const register = async (
   const { email, password } = req.body;
 
   if (!email || !password) {
+    logger.debug({ email }, 'register: missing fields');
     res.status(400).json({ message: 'Email and password are required' });
     return;
   }
 
   if (await findUserByEmail(email)) {
+    logger.warn({ email }, 'register: email already in use');
     res.status(409).json({ message: 'Email already in use' });
     return;
   }
@@ -30,6 +33,7 @@ export const register = async (
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await createUser({ email, passwordHash });
 
+  logger.info({ userId: user.id, email }, 'register: user created');
   const token = signToken(user.id, user.email);
   res.status(201).json({ token, user: { id: user.id, email: user.email } });
 };
@@ -41,16 +45,19 @@ export const login = async (
   const { email, password } = req.body;
 
   if (!email || !password) {
+    logger.debug({ email }, 'login: missing fields');
     res.status(400).json({ message: 'Email and password are required' });
     return;
   }
 
   const user = await findUserByEmail(email);
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    logger.warn({ email }, 'login: invalid credentials');
     res.status(401).json({ message: 'Invalid credentials' });
     return;
   }
 
+  logger.info({ userId: user.id, email }, 'login: success');
   const token = signToken(user.id, user.email);
   res.json({ token, user: { id: user.id, email: user.email } });
 };

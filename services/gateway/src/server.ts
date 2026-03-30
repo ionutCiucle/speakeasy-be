@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import app from './app';
+import { logger } from './logger';
 
 const PORT = process.env.PORT ?? 4000;
 
 app.listen(PORT, () => {
-  console.log(`[gateway] running on http://localhost:${PORT}`);
+  logger.info({ port: PORT }, 'gateway started');
 });

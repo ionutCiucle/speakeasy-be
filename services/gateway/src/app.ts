@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import pinoHttp from 'pino-http';
+import { logger } from './logger';
 import { authenticate } from '@speakeasy/middleware';
 import { authProxy, userProxy, friendshipProxy, tabProxy } from './proxy';
 import { apiReference } from '@scalar/express-api-reference';
@@ -9,6 +11,7 @@ import { join } from 'path';
 
 const app = express();
 
+app.use(pinoHttp({ logger }));
 app.use(cors());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 

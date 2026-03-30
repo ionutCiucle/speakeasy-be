@@ -1,4 +1,5 @@
 import amqplib from 'amqplib';
+import { logger } from './logger';
 
 const EXCHANGE = 'speakeasy.events';
 let channel: amqplib.Channel | null = null;
@@ -17,6 +18,6 @@ export async function publish(routingKey: string, payload: object): Promise<void
     const ch = await getChannel();
     ch.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true });
   } catch (err) {
-    console.error(`[tab-service] failed to publish ${routingKey}:`, err);
+    logger.error({ err, routingKey }, 'publisher: failed to publish event');
   }
 }
