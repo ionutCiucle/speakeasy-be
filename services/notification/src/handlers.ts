@@ -4,19 +4,20 @@ import {
   TabInviteSentPayload,
   TabSettledPayload,
 } from './types';
+import { logger } from './logger';
 
 export function onFriendshipRequested(payload: FriendshipRequestedPayload): void {
-  console.log(`[notify] friendship.requested — notify user ${payload.addresseeId}: new friend request from ${payload.requesterId}`);
+  logger.info({ addresseeId: payload.addresseeId, requesterId: payload.requesterId }, 'notify: friendship.requested');
 }
 
 export function onFriendshipAccepted(payload: FriendshipAcceptedPayload): void {
-  console.log(`[notify] friendship.accepted — notify user ${payload.requesterId}: ${payload.addresseeId} accepted your friend request`);
+  logger.info({ requesterId: payload.requesterId, addresseeId: payload.addresseeId }, 'notify: friendship.accepted');
 }
 
 export function onTabInviteSent(payload: TabInviteSentPayload): void {
-  console.log(`[notify] tab.invite_sent — notify user ${payload.invitedUserId}: invited to tab ${payload.tabId} by ${payload.invitedById}`);
+  logger.info({ invitedUserId: payload.invitedUserId, tabId: payload.tabId, invitedById: payload.invitedById }, 'notify: tab.invite_sent');
 }
 
 export function onTabSettled(payload: TabSettledPayload): void {
-  console.log(`[notify] tab.settled — notify participants ${payload.participantIds.join(', ')}: settlement recorded on tab ${payload.tabId}`);
+  logger.info({ tabId: payload.tabId, participantIds: payload.participantIds }, 'notify: tab.settled');
 }
