@@ -170,7 +170,27 @@ npm run dev:notification     # notification consumer
 npm run dev:gateway          # gateway on :4000
 ```
 
-Data persists in named Docker volumes across restarts. To reset: `docker compose down -v`.
+Data persists in named Docker volumes across restarts.
+
+### Resetting the databases
+
+To wipe all data and start fresh:
+
+```bash
+docker compose down -v   # removes containers AND volumes
+docker compose up -d     # fresh containers, empty databases
+```
+
+After wiping, migrations must be re-applied. Each service's `.env` points to a different port/database, so migrations **must be run from within each service directory** — running from the repo root picks up the wrong `.env`:
+
+```bash
+cd services/auth       && npx prisma migrate deploy
+cd ../user             && npx prisma migrate deploy
+cd ../friendship       && npx prisma migrate deploy
+cd ../tab              && npx prisma migrate deploy
+```
+
+Then restart `npm run dev`.
 
 **Docker Compose is infrastructure, not an npm script.** CI uses GitHub Actions service containers instead.
 

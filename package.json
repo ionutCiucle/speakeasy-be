@@ -7,15 +7,18 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "concurrently \"npm run dev:auth\" \"npm run dev:user\" \"npm run dev:friendship\" \"npm run dev:tab\" \"npm run dev:notification\" \"npm run dev:gateway\"",
+    "test": "npm run test --workspaces --if-present",
     "dev:auth": "npm run dev --workspace=@speakeasy/auth --",
     "dev:user": "npm run dev --workspace=@speakeasy/user --",
     "dev:friendship": "npm run dev --workspace=@speakeasy/friendship --",
     "dev:tab": "npm run dev --workspace=@speakeasy/tab --",
     "dev:notification": "npm run dev --workspace=@speakeasy/notification --",
     "dev:gateway": "npm run dev --workspace=@speakeasy/gateway --",
+    "db:reset": "docker compose down -v && docker compose up -d && sleep 3 && npm run db:migrate",
+    "db:migrate": "cd services/auth && npx prisma migrate deploy && cd ../user && npx prisma migrate deploy && cd ../friendship && npx prisma migrate deploy && cd ../tab && npx prisma migrate deploy",
     "ts:check": "npm run ts:check --workspaces --if-present",
-    "lint:check": "npm run lint:check --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "lint:check": "npm run lint:check --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
@@ -23,6 +26,7 @@
     "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^10.1.0",
     "ts-node-dev": "^2.0.0",
+    "concurrently": "^9.0.0",
     "typescript": "^5.9.3"
   }
 }
