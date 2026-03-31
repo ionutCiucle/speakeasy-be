@@ -24,9 +24,10 @@ const mockRes = () => {
 };
 
 const fakeTab = {
-  id: 't1', title: 'Dinner', createdById: 'u1', closedAt: null,
-  createdAt: new Date(), updatedAt: new Date(),
-  items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }], settlements: [],
+  id: 't1', title: 'Dinner', venue: '', currencyCode: 'USD', currencyName: 'US Dollar', notes: null,
+  createdById: 'u1', closedAt: null, createdAt: new Date(), updatedAt: new Date(),
+  items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }],
+  settlements: [], members: [], menuItems: [],
 };
 
 const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
@@ -37,8 +38,9 @@ describe('handleCreateTab', () => {
   it('creates and returns the tab', async () => {
     vi.mocked(store.createTab).mockResolvedValue(fakeTab);
     const res = mockRes();
-    await handleCreateTab(mockReq({ body: { title: 'Dinner' } }), res as never);
-    expect(store.createTab).toHaveBeenCalledWith('Dinner', 'u1');
+    const body = { title: 'Dinner', venue: 'Restaurant', currency: { code: 'USD', name: 'US Dollar' }, notes: '', members: [], menuItems: [] };
+    await handleCreateTab(mockReq({ body }), res as never);
+    expect(store.createTab).toHaveBeenCalledWith('u1', expect.objectContaining({ title: 'Dinner' }));
     expect(res.status).toHaveBeenCalledWith(201);
   });
 });

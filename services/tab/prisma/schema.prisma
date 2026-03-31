@@ -9,15 +9,39 @@ datasource db {
 }
 
 model Tab {
-  id           String        @id @default(uuid())
-  title        String
-  createdById  String
-  closedAt     DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  items        Item[]
-  participants Participant[]
-  settlements  Settlement[]
+  id            String        @id @default(uuid())
+  title         String
+  venue         String?
+  currencyCode  String        @default("USD")
+  currencyName  String        @default("US Dollar")
+  notes         String?
+  createdById   String
+  closedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         Item[]
+  participants  Participant[]
+  settlements   Settlement[]
+  members       Member[]
+  menuItems     MenuItem[]
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  tabId     String
+  name      String
+  createdAt DateTime @default(now())
+  tab       Tab      @relation(fields: [tabId], references: [id])
+}
+
+model MenuItem {
+  id        String   @id @default(uuid())
+  tabId     String
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tab       Tab      @relation(fields: [tabId], references: [id])
 }
 
 model Item {
