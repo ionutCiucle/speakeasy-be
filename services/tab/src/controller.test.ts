@@ -4,6 +4,8 @@ import {
   handleCreateTab, handleGetTab, handleAddItem, handleUpdateItem,
   handleAddParticipant, handleRecordSettlement, handleCloseTab,
 } from './controller';
+import { validate } from '@speakeasy/middleware';
+import { createTabSchema } from './routes';
 import * as store from './store';
 import * as publisher from './publisher';
 
@@ -24,21 +26,61 @@ const mockRes = () => {
 };
 
 const fakeTab = {
-  id: 't1', title: 'Dinner', createdById: 'u1', closedAt: null,
-  createdAt: new Date(), updatedAt: new Date(),
-  items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }], settlements: [],
+  id: 't1', title: 'Dinner', venue: '', currencyCode: 'USD', currencyName: 'US Dollar', notes: null,
+  status: 'active' as const, createdById: 'u1', closedAt: null, createdAt: new Date(), updatedAt: new Date(),
+  items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }],
+  settlements: [], members: [], menuItems: [],
 };
 
 const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
 
 beforeEach(() => vi.clearAllMocks());
 
+describe('createTab payload validation', () => {
+  const validateCreateTab = validate(createTabSchema);
+  const next = vi.fn();
+  const validBody = {
+    title: 'Dinner',
+    venue: 'Restaurant',
+    currency: { code: 'USD', name: 'US Dollar' },
+    members: [],
+    menuItems: [],
+  };
+
+  beforeEach(() => next.mockReset());
+
+  it.each([
+    ['missing title', { ...validBody, title: undefined }],
+    ['empty title', { ...validBody, title: '' }],
+    ['missing venue', { ...validBody, venue: undefined }],
+    ['missing currency', { ...validBody, currency: undefined }],
+    ['missing currency.code', { ...validBody, currency: { name: 'US Dollar' } }],
+    ['missing currency.name', { ...validBody, currency: { code: 'USD' } }],
+    ['missing members', { ...validBody, members: undefined }],
+    ['missing menuItems', { ...validBody, menuItems: undefined }],
+  ])('returns 400 when %s', (_label, body) => {
+    const res = mockRes();
+    validateCreateTab(mockReq({ body }), res as never, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Validation failed' }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() for a valid payload', () => {
+    const res = mockRes();
+    validateCreateTab(mockReq({ body: validBody }), res as never, next);
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+});
+
 describe('handleCreateTab', () => {
   it('creates and returns the tab', async () => {
     vi.mocked(store.createTab).mockResolvedValue(fakeTab);
     const res = mockRes();
-    await handleCreateTab(mockReq({ body: { title: 'Dinner' } }), res as never);
-    expect(store.createTab).toHaveBeenCalledWith('Dinner', 'u1');
+    const body = { title: 'Dinner', venue: 'Restaurant', currency: { code: 'USD', name: 'US Dollar' }, notes: '', members: [], menuItems: [] };
+    await handleCreateTab(mockReq({ body }), res as never);
+    expect(store.createTab).toHaveBeenCalledWith('u1', expect.objectContaining({ title: 'Dinner' }));
     expect(res.status).toHaveBeenCalledWith(201);
   });
 });

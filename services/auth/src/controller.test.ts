@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { register, login } from './controller';
+import { validate } from '@speakeasy/middleware';
+import { authSchema } from './routes';
 import * as store from './store';
 
 vi.mock('./store');
@@ -17,20 +19,34 @@ beforeEach(() => {
   process.env.JWT_EXPIRES_IN = '7d';
 });
 
+describe('payload validation', () => {
+  const validateAuth = validate(authSchema);
+  const next = vi.fn();
+
+  beforeEach(() => next.mockReset());
+
+  it.each([
+    ['missing email', { password: 'pass' }],
+    ['missing password', { email: 'a@b.com' }],
+    ['empty email', { email: '', password: 'pass' }],
+    ['empty password', { email: 'a@b.com', password: '' }],
+  ])('returns 400 when %s', (_label, body) => {
+    const res = mockRes();
+    validateAuth(mockReq(body), res as never, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Validation failed' }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() for a valid payload', () => {
+    const res = mockRes();
+    validateAuth(mockReq({ email: 'a@b.com', password: 'pass' }), res as never, next);
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+});
+
 describe('register', () => {
-  it('returns 400 when email is missing', async () => {
-    const res = mockRes();
-    await register(mockReq({ password: 'pass' }), res as never);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Email and password are required' });
-  });
-
-  it('returns 400 when password is missing', async () => {
-    const res = mockRes();
-    await register(mockReq({ email: 'a@b.com' }), res as never);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
   it('returns 409 when email is already in use', async () => {
     vi.mocked(store.findUserByEmail).mockResolvedValue({ id: '1', email: 'a@b.com', passwordHash: 'h', createdAt: new Date() });
     const res = mockRes();
@@ -52,12 +68,6 @@ describe('register', () => {
 });
 
 describe('login', () => {
-  it('returns 400 when email is missing', async () => {
-    const res = mockRes();
-    await login(mockReq({ password: 'pass' }), res as never);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
   it('returns 401 when user is not found', async () => {
     vi.mocked(store.findUserByEmail).mockResolvedValue(null);
     const res = mockRes();

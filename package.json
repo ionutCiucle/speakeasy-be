@@ -15,6 +15,7 @@
     "dev:tab": "npm run dev --workspace=@speakeasy/tab --",
     "dev:notification": "npm run dev --workspace=@speakeasy/notification --",
     "dev:gateway": "npm run dev --workspace=@speakeasy/gateway --",
+    "setup": "docker compose up -d && sleep 3 && npm run db:migrate",
     "db:reset": "docker compose down -v && docker compose up -d && sleep 3 && npm run db:migrate",
     "db:migrate": "cd services/auth && npx prisma migrate deploy && cd ../user && npx prisma migrate deploy && cd ../friendship && npx prisma migrate deploy && cd ../tab && npx prisma migrate deploy",
     "ts:check": "npm run ts:check --workspaces --if-present",

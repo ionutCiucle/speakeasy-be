@@ -1,10 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { ZodType } from 'zod';
 import { JwtPayload } from '@speakeasy/types';
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
+
+export const validate = (schema: ZodType) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      const errors = result.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      }));
+      res.status(400).json({ message: 'Validation failed', errors });
+      return;
+    }
+    next();
+  };
 
 export const authenticate = (
   req: AuthRequest,

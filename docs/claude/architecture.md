@@ -36,8 +36,9 @@ tab-service ─────────┴→ RabbitMQ → notification-service
 
 ### Auth Service
 
-- `POST /api/auth/register` — hash password → create user → return JWT
-- `POST /api/auth/login` — verify password → return JWT
+- `POST /api/auth/register` — validate body → hash password → create user → return JWT
+- `POST /api/auth/login` — validate body → verify password → return JWT
+- Both routes run `validate(authSchema)` (requires non-empty `email` and `password`) before the controller
 - All routes are public — no Prisma schema shared with other services
 
 ### User Service
@@ -58,7 +59,7 @@ tab-service ─────────┴→ RabbitMQ → notification-service
 
 ### Tab Service
 
-- `POST /api/tabs` — create tab (creator auto-added as participant)
+- `POST /api/tabs` — validate body → create tab (creator auto-added as participant); requires `title`, `venue`, `currency.{code,name}`, `members[]`, `menuItems[]`
 - `GET /api/tabs/:id` — get tab with items, participants, settlements
 - `POST /api/tabs/:id/items` — add line item
 - `PATCH /api/tabs/:id/items/:itemId` — update item
@@ -96,7 +97,7 @@ tab-service ─────────┴→ RabbitMQ → notification-service
 
 | Package | Purpose |
 |---|---|
-| `@speakeasy/middleware` | `authenticate` Express middleware — validates JWT Bearer token, attaches `req.user` |
+| `@speakeasy/middleware` | `authenticate` — validates JWT Bearer token, attaches `req.user`; `validate(schema)` — Zod-based request body validation middleware, returns `400` on failure |
 | `@speakeasy/types` | Shared TypeScript interfaces (`JwtPayload`) |
 | `@speakeasy/tsconfig` | Shared `tsconfig` base extended by each service |
 
