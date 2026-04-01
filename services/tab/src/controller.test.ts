@@ -25,7 +25,7 @@ const mockRes = () => {
 
 const fakeTab = {
   id: 't1', title: 'Dinner', venue: '', currencyCode: 'USD', currencyName: 'US Dollar', notes: null,
-  createdById: 'u1', closedAt: null, createdAt: new Date(), updatedAt: new Date(),
+  status: 'active' as const, createdById: 'u1', closedAt: null, createdAt: new Date(), updatedAt: new Date(),
   items: [], participants: [{ id: 'p1', tabId: 't1', userId: 'u1', createdAt: new Date() }],
   settlements: [], members: [], menuItems: [],
 };

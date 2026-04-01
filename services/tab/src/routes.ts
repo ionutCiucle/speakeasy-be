@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '@speakeasy/middleware';
 import {
+  handleGetTabs,
   handleCreateTab,
   handleGetTab,
   handleAddItem,
@@ -19,6 +20,7 @@ const router = Router();
 
 router.use(authenticate);
 
+router.get('/', handleGetTabs);
 router.post('/', handleCreateTab);
 router.get('/:id', handleGetTab);
 router.post('/:id/items', handleAddItem);

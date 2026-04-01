@@ -8,6 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TabStatus {
+  active
+  closed
+}
+
 model Tab {
   id            String        @id @default(uuid())
   title         String
@@ -15,6 +20,7 @@ model Tab {
   currencyCode  String        @default("USD")
   currencyName  String        @default("US Dollar")
   notes         String?
+  status        TabStatus     @default(active)
   createdById   String
   closedAt      DateTime?
   createdAt     DateTime      @default(now())

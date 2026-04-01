@@ -39,6 +39,16 @@ export const createTab = async (
   }
 };
 
+export const findAllTabs = async () => {
+  logger.debug('store: findAllTabs');
+  try {
+    return await prisma.tab.findMany({ include: tabInclude, orderBy: { createdAt: 'desc' } });
+  } catch (err) {
+    logger.error({ err }, 'store: findAllTabs failed');
+    throw err;
+  }
+};
+
 export const findTabById = async (id: string) => {
   logger.debug({ id }, 'store: findTabById');
   try {
@@ -172,7 +182,7 @@ export const recordSettlement = async (tabId: string, payerId: string, payeeId: 
 export const closeTab = async (id: string) => {
   logger.debug({ id }, 'store: closeTab');
   try {
-    return await prisma.tab.update({ where: { id }, data: { closedAt: new Date() }, include: tabInclude });
+    return await prisma.tab.update({ where: { id }, data: { closedAt: new Date(), status: 'closed' }, include: tabInclude });
   } catch (err) {
     logger.error({ err, id }, 'store: closeTab failed');
     throw err;

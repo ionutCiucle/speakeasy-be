@@ -12,6 +12,7 @@ import {
 } from './types';
 import {
   createTab,
+  findAllTabs,
   findTabById,
   addItem,
   findItemById,
@@ -34,6 +35,11 @@ type TabRequest = AuthRequest & { params: { id: string } };
 type ItemRequest = AuthRequest & { params: { id: string; itemId: string } };
 type MemberRequest = AuthRequest & { params: { id: string; memberId: string } };
 type MenuItemRequest = AuthRequest & { params: { id: string; menuItemId: string } };
+
+export const handleGetTabs = async (_req: AuthRequest, res: Response): Promise<void> => {
+  const tabs = await findAllTabs();
+  res.json(tabs);
+};
 
 export const handleCreateTab = async (
   req: AuthRequest & { body: CreateTabBody },
