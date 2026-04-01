@@ -12,7 +12,10 @@ import { join } from 'path';
 const app = express();
 
 app.use(pinoHttp({ logger }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL ?? 'http://localhost:8081',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
 app.get('/health', (_req, res) => {
