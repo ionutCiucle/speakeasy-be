@@ -4,6 +4,8 @@ import {
   handleCreateTab, handleGetTab, handleAddItem, handleUpdateItem,
   handleAddParticipant, handleRecordSettlement, handleCloseTab,
 } from './controller';
+import { validate } from '@speakeasy/middleware';
+import { createTabSchema } from './routes';
 import * as store from './store';
 import * as publisher from './publisher';
 
@@ -33,6 +35,44 @@ const fakeTab = {
 const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
 
 beforeEach(() => vi.clearAllMocks());
+
+describe('createTab payload validation', () => {
+  const validateCreateTab = validate(createTabSchema);
+  const next = vi.fn();
+  const validBody = {
+    title: 'Dinner',
+    venue: 'Restaurant',
+    currency: { code: 'USD', name: 'US Dollar' },
+    members: [],
+    menuItems: [],
+  };
+
+  beforeEach(() => next.mockReset());
+
+  it.each([
+    ['missing title', { ...validBody, title: undefined }],
+    ['empty title', { ...validBody, title: '' }],
+    ['missing venue', { ...validBody, venue: undefined }],
+    ['missing currency', { ...validBody, currency: undefined }],
+    ['missing currency.code', { ...validBody, currency: { name: 'US Dollar' } }],
+    ['missing currency.name', { ...validBody, currency: { code: 'USD' } }],
+    ['missing members', { ...validBody, members: undefined }],
+    ['missing menuItems', { ...validBody, menuItems: undefined }],
+  ])('returns 400 when %s', (_label, body) => {
+    const res = mockRes();
+    validateCreateTab(mockReq({ body }), res as never, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Validation failed' }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() for a valid payload', () => {
+    const res = mockRes();
+    validateCreateTab(mockReq({ body: validBody }), res as never, next);
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+});
 
 describe('handleCreateTab', () => {
   it('creates and returns the tab', async () => {

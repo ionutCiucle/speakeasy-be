@@ -18,12 +18,6 @@ export const register = async (
 ): Promise<void> => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    logger.debug({ email }, 'register: missing fields');
-    res.status(400).json({ message: 'Email and password are required' });
-    return;
-  }
-
   if (await findUserByEmail(email)) {
     logger.warn({ email }, 'register: email already in use');
     res.status(409).json({ message: 'Email already in use' });
@@ -43,12 +37,6 @@ export const login = async (
   res: Response,
 ): Promise<void> => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    logger.debug({ email }, 'login: missing fields');
-    res.status(400).json({ message: 'Email and password are required' });
-    return;
-  }
 
   const user = await findUserByEmail(email);
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
