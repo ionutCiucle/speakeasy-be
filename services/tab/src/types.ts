@@ -1,14 +1,3 @@
-export interface Member {
-  id: string;
-  name: string;
-}
-
-export interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-}
-
 export interface Currency {
   code: string;
   name: string;
@@ -19,7 +8,7 @@ export interface CreateTabBody {
   venue: string;
   currency: Currency;
   notes?: string;
-  members: { name: string }[];
+  members: { userId: string }[];
   menuItems: { name: string; price: number }[];
 }
 
@@ -35,22 +24,16 @@ export interface UpdateItemBody {
   paidById?: string;
 }
 
-export interface AddParticipantBody {
+export interface AddMemberBody {
   userId: string;
 }
 
-export interface AddMemberBody {
-  name: string;
+export interface UpdateTabBody {
+  menuItems: { name: string; price: number }[];
 }
 
-export interface AddMenuItemBody {
-  name: string;
-  price: number;
-}
-
-export interface UpdateMenuItemBody {
-  name?: string;
-  price?: number;
+export interface UpdateMemberItemsBody {
+  items: { menuItemId: string; quantity: number }[];
 }
 
 export interface RecordSettlementBody {

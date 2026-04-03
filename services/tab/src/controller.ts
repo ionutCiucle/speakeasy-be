@@ -4,10 +4,9 @@ import {
   CreateTabBody,
   AddItemBody,
   UpdateItemBody,
-  AddParticipantBody,
   AddMemberBody,
-  AddMenuItemBody,
-  UpdateMenuItemBody,
+  UpdateTabBody,
+  UpdateMemberItemsBody,
   RecordSettlementBody,
 } from './types';
 import {
@@ -17,14 +16,11 @@ import {
   addItem,
   findItemById,
   updateItem,
-  addParticipant,
   addMember,
   findMemberById,
   removeMember,
-  addMenuItem,
-  findMenuItemById,
-  updateMenuItem,
-  removeMenuItem,
+  updateTabMenuItems,
+  updateMemberItems,
   recordSettlement,
   closeTab,
 } from './store';
@@ -33,8 +29,7 @@ import { logger } from './logger';
 
 type TabRequest = AuthRequest & { params: { id: string } };
 type ItemRequest = AuthRequest & { params: { id: string; itemId: string } };
-type MemberRequest = AuthRequest & { params: { id: string; memberId: string } };
-type MenuItemRequest = AuthRequest & { params: { id: string; menuItemId: string } };
+type MemberRequest = AuthRequest & { params: { id: string; userId: string } };
 
 export const handleGetTabs = async (_req: AuthRequest, res: Response): Promise<void> => {
   const tabs = await findAllTabs();
@@ -69,6 +64,28 @@ export const handleGetTab = async (req: TabRequest, res: Response): Promise<void
   res.json(tab);
 };
 
+export const handleUpdateTab = async (
+  req: TabRequest & { body: UpdateTabBody },
+  res: Response,
+): Promise<void> => {
+  const tab = await findTabById(req.params.id);
+  if (!tab) {
+    logger.warn({ tabId: req.params.id }, 'handleUpdateTab: not found');
+    res.status(404).json({ message: 'Tab not found' });
+    return;
+  }
+
+  const names = req.body.menuItems.map((item: { name: string; price: number }) => item.name);
+  if (new Set(names).size !== names.length) {
+    logger.warn({ tabId: req.params.id }, 'handleUpdateTab: duplicate menu item names');
+    res.status(400).json({ message: 'Duplicate menu item names are not allowed' });
+    return;
+  }
+
+  logger.info({ tabId: tab.id }, 'handleUpdateTab: menu items updated');
+  res.json(await updateTabMenuItems(tab.id, req.body.menuItems));
+};
+
 export const handleAddItem = async (
   req: TabRequest & { body: AddItemBody },
   res: Response,
@@ -100,23 +117,6 @@ export const handleUpdateItem = async (
   res.json(await updateItem(item.id, req.body));
 };
 
-export const handleAddParticipant = async (
-  req: TabRequest & { body: AddParticipantBody },
-  res: Response,
-): Promise<void> => {
-  const tab = await findTabById(req.params.id);
-  if (!tab) {
-    logger.warn({ tabId: req.params.id }, 'handleAddParticipant: tab not found');
-    res.status(404).json({ message: 'Tab not found' });
-    return;
-  }
-
-  const participant = await addParticipant(tab.id, req.body.userId);
-  logger.info({ tabId: tab.id, userId: participant.userId }, 'handleAddParticipant: participant added');
-  void publish('tab.invite_sent', { tabId: tab.id, invitedUserId: participant.userId, invitedById: req.user!.userId });
-  res.status(201).json(participant);
-};
-
 export const handleAddMember = async (
   req: TabRequest & { body: AddMemberBody },
   res: Response,
@@ -128,66 +128,53 @@ export const handleAddMember = async (
     return;
   }
 
-  const member = await addMember(tab.id, req.body.name);
-  logger.info({ tabId: tab.id, memberId: member.id }, 'handleAddMember: member added');
+  const member = await addMember(tab.id, req.body.userId);
+  logger.info({ tabId: tab.id, userId: member.userId }, 'handleAddMember: member added');
+  void publish('tab.invite_sent', { tabId: tab.id, invitedUserId: member.userId, invitedById: req.user!.userId });
   res.status(201).json(member);
 };
 
 export const handleRemoveMember = async (req: MemberRequest, res: Response): Promise<void> => {
-  const member = await findMemberById(req.params.memberId);
-  if (!member || member.tabId !== req.params.id) {
-    logger.warn({ tabId: req.params.id, memberId: req.params.memberId }, 'handleRemoveMember: not found');
+  const member = await findMemberById(req.params.id, req.params.userId);
+  if (!member) {
+    logger.warn({ tabId: req.params.id, userId: req.params.userId }, 'handleRemoveMember: not found');
     res.status(404).json({ message: 'Member not found' });
     return;
   }
 
-  await removeMember(member.id);
-  logger.info({ tabId: req.params.id, memberId: member.id }, 'handleRemoveMember: member removed');
+  await removeMember(member.tabId, member.userId);
+  logger.info({ tabId: req.params.id, userId: req.params.userId }, 'handleRemoveMember: member removed');
   res.status(204).send();
 };
 
-export const handleAddMenuItem = async (
-  req: TabRequest & { body: AddMenuItemBody },
+export const handleUpdateMemberItems = async (
+  req: MemberRequest & { body: UpdateMemberItemsBody },
   res: Response,
 ): Promise<void> => {
   const tab = await findTabById(req.params.id);
   if (!tab) {
-    logger.warn({ tabId: req.params.id }, 'handleAddMenuItem: tab not found');
+    logger.warn({ tabId: req.params.id }, 'handleUpdateMemberItems: tab not found');
     res.status(404).json({ message: 'Tab not found' });
     return;
   }
 
-  const menuItem = await addMenuItem(tab.id, req.body.name, req.body.price);
-  logger.info({ tabId: tab.id, menuItemId: menuItem.id }, 'handleAddMenuItem: menu item added');
-  res.status(201).json(menuItem);
-};
-
-export const handleUpdateMenuItem = async (
-  req: MenuItemRequest & { body: UpdateMenuItemBody },
-  res: Response,
-): Promise<void> => {
-  const menuItem = await findMenuItemById(req.params.menuItemId);
-  if (!menuItem || menuItem.tabId !== req.params.id) {
-    logger.warn({ tabId: req.params.id, menuItemId: req.params.menuItemId }, 'handleUpdateMenuItem: not found');
-    res.status(404).json({ message: 'Menu item not found' });
+  const member = await findMemberById(req.params.id, req.params.userId);
+  if (!member) {
+    logger.warn({ tabId: req.params.id, userId: req.params.userId }, 'handleUpdateMemberItems: member not found');
+    res.status(404).json({ message: 'Member not found' });
     return;
   }
 
-  logger.info({ menuItemId: menuItem.id }, 'handleUpdateMenuItem: menu item updated');
-  res.json(await updateMenuItem(menuItem.id, req.body));
-};
-
-export const handleRemoveMenuItem = async (req: MenuItemRequest, res: Response): Promise<void> => {
-  const menuItem = await findMenuItemById(req.params.menuItemId);
-  if (!menuItem || menuItem.tabId !== req.params.id) {
-    logger.warn({ tabId: req.params.id, menuItemId: req.params.menuItemId }, 'handleRemoveMenuItem: not found');
-    res.status(404).json({ message: 'Menu item not found' });
+  const validMenuItemIds = new Set(tab.menuItems.map((m) => m.id));
+  const invalid = req.body.items.find((item: { menuItemId: string; quantity: number }) => !validMenuItemIds.has(item.menuItemId));
+  if (invalid) {
+    logger.warn({ tabId: req.params.id, menuItemId: invalid.menuItemId }, 'handleUpdateMemberItems: unknown menu item');
+    res.status(400).json({ message: `Menu item ${invalid.menuItemId} does not exist in this tab` });
     return;
   }
 
-  await removeMenuItem(menuItem.id);
-  logger.info({ tabId: req.params.id, menuItemId: menuItem.id }, 'handleRemoveMenuItem: menu item removed');
-  res.status(204).send();
+  logger.info({ tabId: req.params.id, userId: req.params.userId }, 'handleUpdateMemberItems: items updated');
+  res.json(await updateMemberItems(req.params.id, req.params.userId, req.body.items));
 };
 
 export const handleRecordSettlement = async (
@@ -203,8 +190,8 @@ export const handleRecordSettlement = async (
 
   const settlement = await recordSettlement(tab.id, req.body.payerId, req.body.payeeId, req.body.amount);
   logger.info({ tabId: tab.id, settlementId: settlement.id }, 'handleRecordSettlement: settlement recorded');
-  const participantIds = tab.participants.map((p) => p.userId);
-  void publish('tab.settled', { tabId: tab.id, settlementId: settlement.id, payerId: settlement.payerId, payeeId: settlement.payeeId, participantIds });
+  const memberUserIds = tab.members.map((m) => m.userId);
+  void publish('tab.settled', { tabId: tab.id, settlementId: settlement.id, payerId: settlement.payerId, payeeId: settlement.payeeId, participantIds: memberUserIds });
   res.status(201).json(settlement);
 };
 

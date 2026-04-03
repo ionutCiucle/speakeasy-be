@@ -3,7 +3,12 @@ import { logger } from './logger';
 
 const prisma = new PrismaClient();
 
-const tabInclude = { items: true, participants: true, settlements: true, members: true, menuItems: true };
+const tabInclude = {
+  items: true,
+  settlements: true,
+  members: { include: { memberMenuItems: { include: { menuItem: true } } } },
+  menuItems: true,
+};
 
 export const createTab = async (
   createdById: string,
@@ -13,11 +18,12 @@ export const createTab = async (
     currencyCode: string;
     currencyName: string;
     notes?: string;
-    members: { name: string }[];
+    members: { userId: string }[];
     menuItems: { name: string; price: number }[];
   },
 ) => {
   logger.debug({ title: data.title, createdById }, 'store: createTab');
+  const allMembers = [{ userId: createdById }, ...data.members.filter((m) => m.userId !== createdById)];
   try {
     return await prisma.tab.create({
       data: {
@@ -27,8 +33,7 @@ export const createTab = async (
         currencyName: data.currencyName,
         notes: data.notes,
         createdById,
-        participants: { create: { userId: createdById } },
-        members: data.members.length ? { create: data.members } : undefined,
+        members: allMembers.length ? { create: allMembers } : undefined,
         menuItems: data.menuItems.length ? { create: data.menuItems } : undefined,
       },
       include: tabInclude,
@@ -89,82 +94,85 @@ export const updateItem = async (id: string, data: { label?: string; amount?: nu
   }
 };
 
-export const addParticipant = async (tabId: string, userId: string) => {
-  logger.debug({ tabId, userId }, 'store: addParticipant');
+export const addMember = async (tabId: string, userId: string) => {
+  logger.debug({ tabId, userId }, 'store: addMember');
   try {
-    return await prisma.participant.create({ data: { tabId, userId } });
+    return await prisma.member.create({ data: { tabId, userId } });
   } catch (err) {
-    logger.error({ err, tabId, userId }, 'store: addParticipant failed');
+    logger.error({ err, tabId, userId }, 'store: addMember failed');
     throw err;
   }
 };
 
-export const addMember = async (tabId: string, name: string) => {
-  logger.debug({ tabId, name }, 'store: addMember');
+export const findMemberById = async (tabId: string, userId: string) => {
+  logger.debug({ tabId, userId }, 'store: findMemberById');
   try {
-    return await prisma.member.create({ data: { tabId, name } });
+    return await prisma.member.findUnique({ where: { tabId_userId: { tabId, userId } } });
   } catch (err) {
-    logger.error({ err, tabId, name }, 'store: addMember failed');
+    logger.error({ err, tabId, userId }, 'store: findMemberById failed');
     throw err;
   }
 };
 
-export const findMemberById = async (id: string) => {
-  logger.debug({ id }, 'store: findMemberById');
+export const removeMember = async (tabId: string, userId: string) => {
+  logger.debug({ tabId, userId }, 'store: removeMember');
   try {
-    return await prisma.member.findUnique({ where: { id } });
+    return await prisma.member.delete({ where: { tabId_userId: { tabId, userId } } });
   } catch (err) {
-    logger.error({ err, id }, 'store: findMemberById failed');
+    logger.error({ err, tabId, userId }, 'store: removeMember failed');
     throw err;
   }
 };
 
-export const removeMember = async (id: string) => {
-  logger.debug({ id }, 'store: removeMember');
+export const updateTabMenuItems = async (tabId: string, menuItems: { name: string; price: number }[]) => {
+  logger.debug({ tabId }, 'store: updateTabMenuItems');
   try {
-    return await prisma.member.delete({ where: { id } });
+    const incoming = new Map(menuItems.map((item) => [item.name, item.price]));
+    const existing = await prisma.menuItem.findMany({ where: { tabId } });
+    const existingNames = new Map(existing.map((item) => [item.name, item]));
+
+    const toDelete = existing.filter((item) => !incoming.has(item.name));
+    const toCreate = menuItems.filter((item) => !existingNames.has(item.name));
+    const toUpdate = menuItems.filter((item) => {
+      const ex = existingNames.get(item.name);
+      return ex && Number(ex.price) !== item.price;
+    });
+
+    await prisma.$transaction([
+      ...toDelete.map((item) => prisma.menuItem.delete({ where: { id: item.id } })),
+      ...toCreate.map((item) => prisma.menuItem.create({ data: { tabId, name: item.name, price: item.price } })),
+      ...toUpdate.map((item) => prisma.menuItem.update({
+        where: { id: existingNames.get(item.name)!.id },
+        data: { price: item.price },
+      })),
+    ]);
+
+    return findTabById(tabId);
   } catch (err) {
-    logger.error({ err, id }, 'store: removeMember failed');
+    logger.error({ err, tabId }, 'store: updateTabMenuItems failed');
     throw err;
   }
 };
 
-export const addMenuItem = async (tabId: string, name: string, price: number) => {
-  logger.debug({ tabId, name }, 'store: addMenuItem');
+export const updateMemberItems = async (
+  tabId: string,
+  userId: string,
+  items: { menuItemId: string; quantity: number }[],
+) => {
+  logger.debug({ tabId, userId }, 'store: updateMemberItems');
   try {
-    return await prisma.menuItem.create({ data: { tabId, name, price } });
+    await prisma.$transaction([
+      prisma.memberMenuItem.deleteMany({ where: { tabId, userId } }),
+      prisma.memberMenuItem.createMany({
+        data: items.map((item) => ({ tabId, userId, menuItemId: item.menuItemId, quantity: item.quantity })),
+      }),
+    ]);
+    return prisma.member.findUnique({
+      where: { tabId_userId: { tabId, userId } },
+      include: { memberMenuItems: { include: { menuItem: true } } },
+    });
   } catch (err) {
-    logger.error({ err, tabId, name }, 'store: addMenuItem failed');
-    throw err;
-  }
-};
-
-export const findMenuItemById = async (id: string) => {
-  logger.debug({ id }, 'store: findMenuItemById');
-  try {
-    return await prisma.menuItem.findUnique({ where: { id } });
-  } catch (err) {
-    logger.error({ err, id }, 'store: findMenuItemById failed');
-    throw err;
-  }
-};
-
-export const updateMenuItem = async (id: string, data: { name?: string; price?: number }) => {
-  logger.debug({ id }, 'store: updateMenuItem');
-  try {
-    return await prisma.menuItem.update({ where: { id }, data });
-  } catch (err) {
-    logger.error({ err, id }, 'store: updateMenuItem failed');
-    throw err;
-  }
-};
-
-export const removeMenuItem = async (id: string) => {
-  logger.debug({ id }, 'store: removeMenuItem');
-  try {
-    return await prisma.menuItem.delete({ where: { id } });
-  } catch (err) {
-    logger.error({ err, id }, 'store: removeMenuItem failed');
+    logger.error({ err, tabId, userId }, 'store: updateMemberItems failed');
     throw err;
   }
 };

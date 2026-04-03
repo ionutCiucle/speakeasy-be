@@ -59,14 +59,17 @@ tab-service ─────────┴→ RabbitMQ → notification-service
 
 ### Tab Service
 
-- `POST /api/tabs` — validate body → create tab (creator auto-added as participant); requires `title`, `venue`, `currency.{code,name}`, `members[]`, `menuItems[]`
-- `GET /api/tabs/:id` — get tab with items, participants, settlements
+- `POST /api/tabs` — validate body → create tab (creator auto-added as member); requires `title`, `venue`, `currency.{code,name}`, `members[{ userId }]`, `menuItems[{ name, price }]`
+- `GET /api/tabs/:id` — get tab with items, members (+ their item selections), menu items, settlements
+- `PATCH /api/tabs/:id` — bulk-replace tab menu items by name (upsert by name, delete removed; preserves IDs)
 - `POST /api/tabs/:id/items` — add line item
 - `PATCH /api/tabs/:id/items/:itemId` — update item
-- `POST /api/tabs/:id/participants` — add participant
+- `POST /api/tabs/:id/members` — add a member by `userId`
+- `DELETE /api/tabs/:id/members/:userId` — remove a member
+- `PATCH /api/tabs/:id/members/:userId/items` — replace a member's item selections `{ items: [{ menuItemId, quantity }] }`; validates all `menuItemId`s exist in the tab
 - `POST /api/tabs/:id/settle` — record settlement
 - `POST /api/tabs/:id/close` — close tab (creator only)
-- Emits `tab.invite_sent` (on participant add), `tab.settled` to RabbitMQ
+- Emits `tab.invite_sent` (on member add), `tab.settled` to RabbitMQ
 
 ### Notification Service
 
