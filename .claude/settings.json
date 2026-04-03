@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '\\bgh pr merge\\b'; then branch=$(git symbolic-ref --short HEAD 2>/dev/null); source ~/.nvm/nvm.sh && nvm use --silent 2>/dev/null; cd \"$CLAUDE_PROJECT_DIR\" && git checkout main && git pull --quiet; if [ -n \"$branch\" ] && [ \"$branch\" != \"main\" ] && [ \"$branch\" != \"master\" ]; then git branch -d \"$branch\" 2>/dev/null || git branch -D \"$branch\"; echo \"Cleaned up local branch: $branch\"; fi; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); file=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if [ -n \"$file\" ]; then source ~/.nvm/nvm.sh && nvm use --silent 2>/dev/null; cd \"$CLAUDE_PROJECT_DIR\" && npx prettier --write \"$file\" --log-level silent 2>/dev/null; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command'); if echo \"$cmd\" | grep -qE '^(node|npm|npx|expo)\\b'; then echo \"$input\" | jq --arg prefix 'source ~/.nvm/nvm.sh && nvm use --silent && ' '{hookSpecificOutput: {hookEventName: \"PreToolUse\", updatedInput: (.tool_input + {command: ($prefix + .tool_input.command)})}}'; fi"
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '\\bgh pr create\\b'; then source ~/.nvm/nvm.sh && nvm use --silent 2>/dev/null; cd \"$CLAUDE_PROJECT_DIR\"; echo '--- Preflight: ts:check ---'; npm run ts:check; TS=$?; echo '--- Preflight: lint:check ---'; npm run lint:check; LINT=$?; echo '--- Preflight: test ---'; npm test -- --passWithNoTests; TEST=$?; if [ $TS -ne 0 ] || [ $LINT -ne 0 ] || [ $TEST -ne 0 ]; then echo 'Preflight checks failed. Fix the errors above before raising a PR.'; exit 2; fi; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
