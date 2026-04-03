@@ -12,16 +12,8 @@ export interface CreateTabBody {
   menuItems: { name: string; price: number }[];
 }
 
-export interface AddItemBody {
-  label: string;
-  amount: number;
-  paidById: string;
-}
-
-export interface UpdateItemBody {
-  label?: string;
-  amount?: number;
-  paidById?: string;
+export interface AddItemsBody {
+  items: { label: string; amount: number; addedBy: string }[];
 }
 
 export interface AddMemberBody {

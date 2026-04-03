@@ -2,8 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '@speakeasy/middleware';
 import {
   CreateTabBody,
-  AddItemBody,
-  UpdateItemBody,
+  AddItemsBody,
   AddMemberBody,
   UpdateTabBody,
   UpdateMemberItemsBody,
@@ -13,9 +12,9 @@ import {
   createTab,
   findAllTabs,
   findTabById,
-  addItem,
+  addItems,
   findItemById,
-  updateItem,
+  removeItem,
   addMember,
   findMemberById,
   removeMember,
@@ -83,11 +82,11 @@ export const handleUpdateTab = async (
   }
 
   logger.info({ tabId: tab.id }, 'handleUpdateTab: menu items updated');
-  res.json(await updateTabMenuItems(tab.id, req.body.menuItems));
+  res.json(await updateTabMenuItems(tab.id, req.user!.userId, req.body.menuItems));
 };
 
 export const handleAddItem = async (
-  req: TabRequest & { body: AddItemBody },
+  req: TabRequest & { body: AddItemsBody },
   res: Response,
 ): Promise<void> => {
   const tab = await findTabById(req.params.id);
@@ -97,24 +96,22 @@ export const handleAddItem = async (
     return;
   }
 
-  const item = await addItem(tab.id, req.body.label, req.body.amount, req.body.paidById);
-  logger.info({ tabId: tab.id, itemId: item.id }, 'handleAddItem: item added');
-  res.status(201).json(item);
+  const items = await addItems(tab.id, req.body.items);
+  logger.info({ tabId: tab.id, count: items.length }, 'handleAddItem: items added');
+  res.status(201).json(items);
 };
 
-export const handleUpdateItem = async (
-  req: ItemRequest & { body: UpdateItemBody },
-  res: Response,
-): Promise<void> => {
+export const handleRemoveItem = async (req: ItemRequest, res: Response): Promise<void> => {
   const item = await findItemById(req.params.itemId);
   if (!item || item.tabId !== req.params.id) {
-    logger.warn({ tabId: req.params.id, itemId: req.params.itemId }, 'handleUpdateItem: not found');
+    logger.warn({ tabId: req.params.id, itemId: req.params.itemId }, 'handleRemoveItem: not found');
     res.status(404).json({ message: 'Item not found' });
     return;
   }
 
-  logger.info({ itemId: item.id }, 'handleUpdateItem: item updated');
-  res.json(await updateItem(item.id, req.body));
+  await removeItem(item.id);
+  logger.info({ tabId: req.params.id, itemId: item.id }, 'handleRemoveItem: item removed');
+  res.status(204).send();
 };
 
 export const handleAddMember = async (

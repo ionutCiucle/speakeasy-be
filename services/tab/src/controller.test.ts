@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Decimal } from '../prisma/client/runtime/library';
 import {
-  handleCreateTab, handleGetTab, handleUpdateTab, handleAddItem, handleUpdateItem,
+  handleCreateTab, handleGetTab, handleUpdateTab, handleAddItem, handleRemoveItem,
   handleAddMember, handleRemoveMember, handleUpdateMemberItems,
   handleRecordSettlement, handleCloseTab,
 } from './controller';
 import { validate } from '@speakeasy/middleware';
-import { createTabSchema, updateTabSchema, updateMemberItemsSchema } from './routes';
+import { createTabSchema, updateTabSchema, addItemsSchema, updateMemberItemsSchema } from './routes';
 import * as store from './store';
 import * as publisher from './publisher';
 
@@ -26,7 +26,7 @@ const mockRes = () => {
   return res;
 };
 
-const fakeMenuItem = { id: 'm1', tabId: 't1', name: 'Burger', price: new Decimal(10), createdAt: new Date(), updatedAt: new Date() };
+const fakeMenuItem = { id: 'm1', tabId: 't1', name: 'Burger', price: new Decimal(10), addedBy: 'u1' };
 
 const fakeTab = {
   id: 't1', title: 'Dinner', venue: '', currencyCode: 'USD', currencyName: 'US Dollar', notes: null,
@@ -36,7 +36,7 @@ const fakeTab = {
   menuItems: [fakeMenuItem],
 };
 
-const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), paidById: 'u1', createdAt: new Date(), updatedAt: new Date() };
+const fakeItem = { id: 'i1', tabId: 't1', label: 'Pizza', amount: new Decimal(10), addedBy: 'u1', createdAt: new Date(), updatedAt: new Date() };
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -202,8 +202,36 @@ describe('handleUpdateTab', () => {
     vi.mocked(store.updateTabMenuItems).mockResolvedValue(updatedTab);
     const res = mockRes();
     await handleUpdateTab(mockReq({ params: { id: 't1' }, body: { menuItems: [{ name: 'Burger', price: 10 }] } }), res as never);
-    expect(store.updateTabMenuItems).toHaveBeenCalledWith('t1', [{ name: 'Burger', price: 10 }]);
+    expect(store.updateTabMenuItems).toHaveBeenCalledWith('t1', 'u1', [{ name: 'Burger', price: 10 }]);
     expect(res.json).toHaveBeenCalledWith(updatedTab);
+  });
+});
+
+describe('addItems payload validation', () => {
+  const validateAddItems = validate(addItemsSchema);
+  const next = vi.fn();
+
+  beforeEach(() => next.mockReset());
+
+  it.each([
+    ['missing items', {}],
+    ['non-array items', { items: 'bad' }],
+    ['empty items array', { items: [] }],
+    ['item missing label', { items: [{ amount: 10, paidById: 'u1' }] }],
+    ['item empty label', { items: [{ label: '', amount: 10, paidById: 'u1' }] }],
+    ['item missing amount', { items: [{ label: 'Pizza', paidById: 'u1' }] }],
+    ['item missing addedBy', { items: [{ label: 'Pizza', amount: 10 }] }],
+  ])('returns 400 when %s', (_label, body) => {
+    const res = mockRes();
+    validateAddItems(mockReq({ body }), res as never, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() for a valid payload', () => {
+    const res = mockRes();
+    validateAddItems(mockReq({ body: { items: [{ label: 'Pizza', amount: 10, addedBy: 'u1' }] } }), res as never, next);
+    expect(next).toHaveBeenCalled();
   });
 });
 
@@ -211,42 +239,46 @@ describe('handleAddItem', () => {
   it('returns 404 when tab not found', async () => {
     vi.mocked(store.findTabById).mockResolvedValue(null);
     const res = mockRes();
-    await handleAddItem(mockReq({ params: { id: 't1' }, body: { label: 'Pizza', amount: 10, paidById: 'u1' } }), res as never);
+    await handleAddItem(mockReq({ params: { id: 't1' }, body: { items: [{ label: 'Pizza', amount: 10, paidById: 'u1' }] } }), res as never);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  it('adds item and returns 201', async () => {
+  it('adds items and returns 201', async () => {
     vi.mocked(store.findTabById).mockResolvedValue(fakeTab);
-    vi.mocked(store.addItem).mockResolvedValue(fakeItem);
+    vi.mocked(store.addItems).mockResolvedValue([fakeItem]);
     const res = mockRes();
-    await handleAddItem(mockReq({ params: { id: 't1' }, body: { label: 'Pizza', amount: 10, paidById: 'u1' } }), res as never);
+    await handleAddItem(mockReq({ params: { id: 't1' }, body: { items: [{ label: 'Pizza', amount: 10, addedBy: 'u1' }] } }), res as never);
+    expect(store.addItems).toHaveBeenCalledWith('t1', [{ label: 'Pizza', amount: 10, addedBy: 'u1' }]);
     expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith([fakeItem]);
   });
 });
 
-describe('handleUpdateItem', () => {
+describe('handleRemoveItem', () => {
   it('returns 404 when item not found', async () => {
     vi.mocked(store.findItemById).mockResolvedValue(null);
     const res = mockRes();
-    await handleUpdateItem(mockReq({ params: { id: 't1', itemId: 'i1' } }), res as never);
+    await handleRemoveItem(mockReq({ params: { id: 't1', itemId: 'i1' } }), res as never);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
   it('returns 404 when item belongs to a different tab', async () => {
     vi.mocked(store.findItemById).mockResolvedValue({ ...fakeItem, tabId: 'other' });
     const res = mockRes();
-    await handleUpdateItem(mockReq({ params: { id: 't1', itemId: 'i1' } }), res as never);
+    await handleRemoveItem(mockReq({ params: { id: 't1', itemId: 'i1' } }), res as never);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  it('updates and returns the item', async () => {
+  it('removes the item and returns 204', async () => {
     vi.mocked(store.findItemById).mockResolvedValue(fakeItem);
-    vi.mocked(store.updateItem).mockResolvedValue({ ...fakeItem, label: 'Pasta' });
+    vi.mocked(store.removeItem).mockResolvedValue(fakeItem);
     const res = mockRes();
-    await handleUpdateItem(mockReq({ params: { id: 't1', itemId: 'i1' }, body: { label: 'Pasta' } }), res as never);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ label: 'Pasta' }));
+    await handleRemoveItem(mockReq({ params: { id: 't1', itemId: 'i1' } }), res as never);
+    expect(store.removeItem).toHaveBeenCalledWith('i1');
+    expect(res.status).toHaveBeenCalledWith(204);
   });
 });
+
 
 describe('handleAddMember', () => {
   it('returns 404 when tab not found', async () => {
@@ -311,7 +343,7 @@ describe('handleUpdateMemberItems', () => {
   });
 
   it('updates member items and returns the member', async () => {
-    const updatedMember = { tabId: 't1', userId: 'u1', memberMenuItems: [{ tabId: 't1', userId: 'u1', menuItemId: 'm1', quantity: 2, menuItem: fakeMenuItem }] };
+    const updatedMember = { tabId: 't1', userId: 'u1', memberMenuItems: [{ tabId: 't1', userId: 'u1', menuItemId: 'm1', quantity: 2 }] };
     vi.mocked(store.findTabById).mockResolvedValue(fakeTab);
     vi.mocked(store.findMemberById).mockResolvedValue({ tabId: 't1', userId: 'u1' });
     vi.mocked(store.updateMemberItems).mockResolvedValue(updatedMember);

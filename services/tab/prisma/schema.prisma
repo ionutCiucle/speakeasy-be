@@ -28,27 +28,23 @@ model Tab {
   items        Item[]
   settlements  Settlement[]
   members      Member[]
-  menuItems    MenuItem[]
 }
 
 model Member {
   tabId           String
   userId          String
-  tab             Tab             @relation(fields: [tabId], references: [id])
+  tab             Tab              @relation(fields: [tabId], references: [id])
   memberMenuItems MemberMenuItem[]
 
   @@id([tabId, userId])
 }
 
 model MenuItem {
-  id              String           @id @default(uuid())
-  tabId           String
-  name            String
-  price           Decimal          @db.Decimal(10, 2)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  tab             Tab              @relation(fields: [tabId], references: [id])
-  memberMenuItems MemberMenuItem[]
+  id      String  @id @default(uuid())
+  tabId   String
+  name    String
+  price   Decimal @db.Decimal(10, 2)
+  addedBy String
 }
 
 model MemberMenuItem {
@@ -56,8 +52,7 @@ model MemberMenuItem {
   userId     String
   menuItemId String
   quantity   Int
-  member     Member   @relation(fields: [tabId, userId], references: [tabId, userId])
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  member     Member @relation(fields: [tabId, userId], references: [tabId, userId])
 
   @@id([tabId, userId, menuItemId])
 }
@@ -67,7 +62,7 @@ model Item {
   tabId     String
   label     String
   amount    Decimal  @db.Decimal(10, 2)
-  paidById  String
+  addedBy   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tab       Tab      @relation(fields: [tabId], references: [id])
