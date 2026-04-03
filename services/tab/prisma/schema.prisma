@@ -14,40 +14,47 @@ enum TabStatus {
 }
 
 model Tab {
-  id            String        @id @default(uuid())
-  title         String
-  venue         String?
-  currencyCode  String        @default("USD")
-  currencyName  String        @default("US Dollar")
-  notes         String?
-  status        TabStatus     @default(active)
-  createdById   String
-  closedAt      DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  items         Item[]
-  participants  Participant[]
-  settlements   Settlement[]
-  members       Member[]
-  menuItems     MenuItem[]
+  id           String       @id @default(uuid())
+  title        String
+  venue        String?
+  currencyCode String       @default("USD")
+  currencyName String       @default("US Dollar")
+  notes        String?
+  status       TabStatus    @default(active)
+  createdById  String
+  closedAt     DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  items        Item[]
+  settlements  Settlement[]
+  members      Member[]
 }
 
 model Member {
-  id        String   @id @default(uuid())
-  tabId     String
-  name      String
-  createdAt DateTime @default(now())
-  tab       Tab      @relation(fields: [tabId], references: [id])
+  tabId           String
+  userId          String
+  tab             Tab              @relation(fields: [tabId], references: [id])
+  memberMenuItems MemberMenuItem[]
+
+  @@id([tabId, userId])
 }
 
 model MenuItem {
-  id        String   @id @default(uuid())
-  tabId     String
-  name      String
-  price     Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tab       Tab      @relation(fields: [tabId], references: [id])
+  id      String  @id @default(uuid())
+  tabId   String
+  name    String
+  price   Decimal @db.Decimal(10, 2)
+  addedBy String
+}
+
+model MemberMenuItem {
+  tabId      String
+  userId     String
+  menuItemId String
+  quantity   Int
+  member     Member @relation(fields: [tabId, userId], references: [tabId, userId])
+
+  @@id([tabId, userId, menuItemId])
 }
 
 model Item {
@@ -55,20 +62,10 @@ model Item {
   tabId     String
   label     String
   amount    Decimal  @db.Decimal(10, 2)
-  paidById  String
+  addedBy   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tab       Tab      @relation(fields: [tabId], references: [id])
-}
-
-model Participant {
-  id        String   @id @default(uuid())
-  tabId     String
-  userId    String
-  createdAt DateTime @default(now())
-  tab       Tab      @relation(fields: [tabId], references: [id])
-
-  @@unique([tabId, userId])
 }
 
 model Settlement {
